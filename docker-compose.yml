@@ -11,8 +11,9 @@ services:
       driver: json-file
     environment:
       - TZ=America/New_York
+      - UID
     # Mount config & data so you can edit feeds/voice and persist processed URLs
-    user: "1001:1001"
+    user: "1001:988"
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - ./article_docs:/app/article_docs
