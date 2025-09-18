@@ -1,0 +1,8 @@
+# TikTok Script (~{seconds}s)
+
+Hook: {hook}
+
+Body:
+{body}
+
+CTA: {cta}

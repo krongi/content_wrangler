@@ -1,0 +1,7 @@
+{headline}
+
+{summary}
+
+{cta}
+
+{hashtags}

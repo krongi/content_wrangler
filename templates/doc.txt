@@ -1,0 +1,9 @@
+{headline}
+
+{summary}
+
+Key takeaways:
+{bullets}
+
+{hashtags}
+{link}

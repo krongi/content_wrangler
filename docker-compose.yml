@@ -1,0 +1,23 @@
+services:
+  tech-engine:
+    build: .
+    image: subvertec/tech-content-engine:latest
+    container_name: tech-content-engine
+    restart: no
+    # Load secrets from .env (OPENAI_API_KEY, BUFFER_* etc.)
+    env_file: .env
+    working_dir: /app
+    logging:
+      driver: json-file
+    environment:
+      - TZ=America/New_York
+    # Mount config & data so you can edit feeds/voice and persist processed URLs
+    user: "1001:1001"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./article_docs:/app/article_docs
+      - ./data:/app/data
+      - ./templates:/app/templates:ro
+      - ./platforms:/app/platforms:ro
+      - ./publisher:/app/publisher:ro
+    command: ["python", "main.py"]

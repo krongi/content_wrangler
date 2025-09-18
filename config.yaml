@@ -1,0 +1,130 @@
+brand_name: "Subvertec"
+voice:
+  style: "Technically-savvy, direct, a tad irreverent, helpful for SMBs/MSPs."
+  audience: "Tech-curious pros, makers, small-business owners."
+hashtags: ["#technews", "#AI", "#security", "#cloud", "#MSP"]
+
+articles_per_run: 1
+
+feeds:
+  - "https://feeds.arstechnica.com/arstechnica/index"
+  # - "https://arstechnica.com/gadgets/feed/"
+  # - "https://arstechnica.com/gadgets/feed/"
+  # - "https://arstechnica.com/security/feed/"
+  # - "https://arstechnica.com/information-technology/feed/"
+  # - "https://www.wired.com/feed/tag/wired-guide/latest/rss"
+  # - "https://www.wired.com/feed/category/ideas/latest/rss"
+  # - "https://www.wired.com/feed/category/security/latest/rss"
+  # - "https://www.techradar.com/feeds/tag/software"
+  # - "https://www.techradar.com/feeds/tag/internet"
+  # - "https://www.theverge.com/rss/index.xml"
+  - "https://www.wired.com/feed/rss"
+  - "https://hnrss.org/frontpage"
+  - "https://www.techradar.com/feeds.xml"
+  - "https://www.zdnet.com/news/rss.xml"
+
+post:
+  use_buffer: false        # true to enable posting
+  dry_run: true            # false to actually post
+  buffer:
+    access_token: "${BUFFER_ACCESS_TOKEN}"
+    profile_ids:
+      - "${BUFFER_PROFILE_1}"
+      # - "${BUFFER_PROFILE_2}"
+
+llm:
+  provider: "grok"       # "openai" | "ollama" | "none"
+  openai:
+    model: "gpt-4o-mini"
+    max_tokens: 500
+  ollama:
+    model: "llama3.1:8b"
+  grok:
+    model: "grok-3-mini"
+
+platforms:
+  twitter:
+    enabled: true
+    max_len: 260
+    add_link: true
+  facebook:
+    enabled: true
+    add_link: true
+  instagram:
+    enabled: true
+    add_link: false
+  tiktok:
+    enabled: true
+    script_seconds: 45
+  doc:
+    enabled: true
+
+revenue_filter:
+  min_score: 2           # raise/lower to be stricter/looser
+  use_llm_second_pass: True  # set true to gate with LLM after keyword pass
+  include_keywords:
+    - azure
+    - microsoft 365
+    - exchange online
+    - intune
+    - defender
+    - teams
+    - sharepoint
+    - onedrive
+    - power automate
+    - powerapps
+    - ransomware
+    - breach
+    - phishing
+    - cve
+    - zero-day
+    - vulnerability
+    - mfa
+    - dns
+    - pi-hole
+    - unifi
+    - firewall
+    - sd-wan
+    - wifi
+    - sase
+    - proxmox
+    - docker
+    - kubernetes
+    - k8s
+    - terraform
+    - devops
+    - sre
+    - observability
+    - backup
+    - disaster recovery
+    - hipaa
+    - soc 2
+    - compliance
+    - ai
+    - llm
+    - copilot
+    - automation
+    - chatbot
+    - vector
+    - retrieval
+  exclude_keywords:
+    - celebrity
+    - iphone review
+    - android rumor
+    - gaming
+    - playstation
+    - xbox
+    - movie
+    - entertainment
+    - sports
+    - car review
+
+tag_buckets:
+  Security: [ransomware, breach, cve, zero-day, vulnerability, mfa, phishing, soc, endpoint, defender]
+  Microsoft365: [microsoft 365, exchange online, outlook, teams, sharepoint, onedrive, intune, copilot]
+  Azure: [azure, sentinel, entra, aad, active directory, arc, functions]
+  Networking: [dns, unifi, firewall, sd-wan, wifi, bgp, pi-hole, pihole]
+  CloudDevOps: [docker, kubernetes, k8s, terraform, devops, sre, observability, proxmox]
+  AI_Automation: [ai, llm, chatbot, automation, vector, retrieval, rpa, copilot]
+  Backup_DR: [backup, disaster recovery, dr, restore, immutable, veeam]
+  Compliance: [hipaa, soc 2, soc2, pci, gdpr, nist, iso 27001]

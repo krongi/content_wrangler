@@ -1,0 +1,12 @@
+feedparser
+requests
+readability-lxml
+lxml
+beautifulsoup4
+python-dotenv
+PyYAML
+tiktoken
+wheel
+openai
+xai_sdk
+jinja2
