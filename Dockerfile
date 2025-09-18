@@ -39,7 +39,7 @@ WORKDIR /app
 
 # Copy project files
 COPY . /app
-RUN mkdir -p /app/data && chown -R appuser:appuser /app
+RUN mkdir -p /app/data && mkdir /app/article_docs && chown -R appuser:appuser /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends tzdata \
  && ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime \
