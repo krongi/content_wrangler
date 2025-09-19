@@ -534,8 +534,7 @@ def main():
         )
 
         # Body (dedented so you don’t get weird leading spaces)
-        body_md = textwrap.dedent(f"""
-        {article_pack['summary']}
+        body_md = textwrap.dedent(f"""{article_pack['summary']}
 
         **Key takeaways**
         {os.linesep.join([f"- {b}" for b in article_pack['bullets'][:5]])}
