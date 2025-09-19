@@ -1,12 +1,13 @@
 import requests, re, os, dotenv, feedparser, hashlib
+from pathlib import Path
 from db import was_processed
 from readability import Document
 from bs4 import BeautifulSoup
 
 dotenv.load_dotenv()
 
-TEMPLATES = os.getenv("TEMPLATE_PATH")
-
+TEMPLATES = Path(__file__).resolve().parent / "templates"
+print(str(TEMPLATES))
 def clean_text(txt: str) -> str:
     return re.sub(r"\s+", " ", txt).strip()
 
