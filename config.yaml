@@ -8,6 +8,9 @@ articles_per_run: 1
 
 feeds:
   - "https://feeds.arstechnica.com/arstechnica/index"
+  - "https://slickdeals.net/newsearch.php?mode=frontpage&searcharea=deals&searchin=first&rss=1"
+  - "https://slickdeals.net/newsearch.php?mode=popdeals&searcharea=deals&searchin=first&rss=1"
+  - "http://feeds.feedburner.com/SlickdealsnetUP"
   # - "https://arstechnica.com/gadgets/feed/"
   # - "https://arstechnica.com/gadgets/feed/"
   # - "https://arstechnica.com/security/feed/"
