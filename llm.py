@@ -83,16 +83,13 @@ def filter_revenue_aligned(candidates: list[tuple[str,str]], cfg: dict) -> list[
     return kept
 
 def build_prompt(brand, voice, article_text, title):
-    return f"""You are {brand}'s tech editor. Rewrite the news in your own words (no quotes, no verbatim).
+    return f"""You are {brand}'s tech editor. Rewrite the news in your own words (no quotes).
 
 Style: {voice.get('style')}
 Audience: {voice.get('audience')}
 
-Output EXACTLY this format:
-1) A tight 4–6 sentence summary (context + why it matters for SMBs/MSPs).
-2) A line that says: "Takeaways:"
-3) 3–5 bullets, each ≤ 14 words, starting with "- ". No sentences copied from the summary.
-   Focus bullets on implications, risks, costs, or actions for SMBs/MSPs.
+Output: a single 4–6 sentence paragraph summary.
+Do NOT use markdown headers, numbered steps, bullets, or the word "Takeaways".
 
 Title: {title}
 

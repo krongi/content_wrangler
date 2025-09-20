@@ -43,7 +43,7 @@ def main():
     if not candidates:
         print(">> No revenue-aligned candidates OR no fresh items found. Try lowering min_score or adding keywords.", flush=True)
         return
-
+    
     to_process = candidates[: cfg.get("articles_per_run", 1)]
     print(f"Processing {len(to_process)} article(s).")
 
@@ -81,7 +81,7 @@ def main():
         tags = auto_tags(title + " " + summary, buckets)
         print(f">> Auto-tags: {tags}", flush=True)
 
-        article_pack = {"title": title, "summary": summary, "bullets": bullets, "tags": tags}
+        article_pack = {"title": title, "summary": summary, "tags": tags}
         out = format_outputs(article_pack, link, cfg.get("hashtags", []), cfg.get("platforms", {}), tags)
 
         repo_owner_repo = os.getenv("GITHUB_PAGES_REPO", "subv3rsiv3/website")  # e.g., "Subvertec/subvertec.github.io"
@@ -105,7 +105,7 @@ def main():
             {
                 "title": title,
                 "summary": article_pack["summary"],
-                "bullets": article_pack["bullets"],
+                #"bullets": article_pack["bullets"],
                 "link": link,
                 "tags": article_pack.get("tags", []),
             },
@@ -147,5 +147,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    "### ChatGPT's Science Summary Struggles: A Cautionary Tale for Tech Users\nScience journalists at AAAS recently tested ChatGPT's ability to condense complex scientific papers, and the AI came up short on accuracy and depth. While it handled straightforward transcription okay, it flubbed nuances like distinguishing correlation from causation, ignored key contexts, and overhyped findings—issues that tanked its scores to an average of just over 2 out of 5 for usefulness and appeal. This highlights AI's limitations in handling the precision required for scientific communication, where getting facts wrong can mislead audiences. For SMBs and MSPs leaning on AI for content automation or quick insights, this means potential pitfalls like spreading incorrect info in marketing materials or internal reports, which could erode trust and require costly fixes. Ultimately, it's a reminder that while AI can speed up tasks, over-relying on it without oversight might do more harm than good for your operations.\n\nTakeaways:\n- AI tools like ChatGPT demand thorough fact-checking, increasing your workload.\n- Risks include misinformation in client reports, damaging SMB credibility.\n- Budget extra time and resources for editing AI-generated content.\n- Use AI for initial drafts only, not final scientific summaries."
