@@ -1,6 +1,9 @@
 import os, re
 from manipulation import extract_article, clean_text, token_trim
 
+def _strip_md_headings(s: str) -> str:
+    return re.sub(r'(?m)^\s*#{1,6}\s+', '', s).strip()
+
 def score_text(text: str, inc: list[str], exc: list[str]) -> int:
     """Simple keyword scoring."""
     s = text.lower()
@@ -119,8 +122,9 @@ def run_llm(prompt: str, cfg: dict) -> str:
         chat = client.chat.create(model=model)
         chat.append(user(prompt))
         resp = chat.sample()
-        print(resp.content)
-        return resp.content
+        resp = _strip_md_headings(resp.content)
+        print(resp)
+        return resp
     elif provider == "ollama":
         import subprocess
         p = subprocess.run(["ollama","run",cfg["ollama"].get("model","llama3.1:8b")],

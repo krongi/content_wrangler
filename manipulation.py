@@ -3,6 +3,7 @@ from pathlib import Path
 from db import was_processed
 from readability import Document
 from bs4 import BeautifulSoup
+from jinja2 import Environment, FileSystemLoader
 
 dotenv.load_dotenv()
 
@@ -27,6 +28,16 @@ def extract_article(url: str, timeout=20) -> str:
 def token_trim(s: str, max_chars: int) -> str:
     s = s.strip()
     return s if len(s) <= max_chars else s[:max_chars-1].rstrip() + "…"
+
+def render_template(name: str, context: dict) -> str:
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATES)),
+        autoescape=False,   # markdown, not HTML
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+    return env.get_template(name).render(**context).strip() + "\n"
+
 
 def _normalize_hashtags(h) -> list[str]:
     if h is None:
@@ -192,8 +203,6 @@ def pick_fresh_entries(cfg, con):
 
     print(f">> Total candidate articles found: {len(dedup)}", flush=True)
     return dedup
-
-
 
 def auto_tags(text: str, buckets: dict[str, list[str]], max_tags: int = 3) -> list[str]:
     """Return up to max_tags bucket names whose keywords appear in text."""

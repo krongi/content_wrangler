@@ -1,1 +1,8 @@
-{{ fm_text }}{{ content }}
+{{ summary }}
+
+**Key takeaways**
+{% for b in bullets[:5] -%}
+- {{ b }}
+{% endfor %}
+
+**Source:** [{{ link }}]({{ link }})
