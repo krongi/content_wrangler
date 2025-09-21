@@ -1,9 +1,8 @@
 # publisher/jekyll_publisher.py
-
 from __future__ import annotations
 import base64, json, re, datetime
 from pathlib import Path
-import requests
+import requests, base64, requests
 
 # If you moved FM to publisher/front_matter.py, we can bridge to it here
 from publisher.front_matter import build_front_matter_dict, front_matter_text
@@ -13,6 +12,8 @@ def slugify(title: str) -> str:
     s = re.sub(r"[^a-z0-9\s-]", "", s)
     s = re.sub(r"\s+", "-", s).strip("-")
     return s[:80]
+
+# publisher/github_files.py
 
 def jekyll_permalink(base_url: str, date: datetime.datetime, slug: str,
                      pattern: str = "/blog/:title/") -> str:

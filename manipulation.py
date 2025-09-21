@@ -38,7 +38,6 @@ def render_template(name: str, context: dict) -> str:
     )
     return env.get_template(name).render(**context).strip() + "\n"
 
-
 def _normalize_hashtags(h) -> list[str]:
     if h is None:
         return []

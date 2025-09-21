@@ -2,13 +2,15 @@
 import os, hashlib, textwrap, datetime, socket, yaml
 from pathlib import Path
 from dotenv import load_dotenv
+from img_gen import generate_hero_image, llm_image, payload, headers, IMAGE_GENERATION_URL
 from db import init_db, mark_processed
-from llm import filter_revenue_aligned, build_prompt, run_llm
+from llm import filter_revenue_aligned, build_prompt, run_llm, get_image_prompt
 from post import post_to_buffer
 from manipulation import extract_article, format_outputs, pick_fresh_entries, auto_tags, render_template
 from bullets import extract_bullets, dedupe_bullets, fallback_bullets_from_summary
 from publisher.jekyll_publisher import github_commit_markdown, jekyll_permalink
 from publisher.front_matter import build_front_matter_dict, front_matter_text
+from publisher.github_files import github_commit_file
 
 socket.setdefaulttimeout(10)
 
@@ -65,7 +67,10 @@ def main():
 
         prompt = build_prompt(cfg["brand_name"], cfg["voice"], art_text, title)
         rewritten = run_llm(prompt, cfg.get("llm", {"provider":"none"}))
-
+        gen_image_idea = get_image_prompt(cfg["brand_name"], cfg["voice"], rewritten)
+        image_prompt = run_llm(gen_image_idea, cfg.get("llm", {"provider": "none"}))
+        article_image = llm_image(url=IMAGE_GENERATION_URL, api_key=os.getenv("XAI_API_KEY"), model="grok-2-image", prompt=image_prompt)
+        
        # summary + bullets
         summary = " ".join([s.strip() for s in rewritten.split("\n")[0:6] if s.strip()])
 
@@ -81,7 +86,7 @@ def main():
         tags = auto_tags(title + " " + summary, buckets)
         print(f">> Auto-tags: {tags}", flush=True)
 
-        article_pack = {"title": title, "summary": summary, "tags": tags}
+        article_pack = {"title": title, "summary": summary, "bullets": bullets, "tags": tags}
         out = format_outputs(article_pack, link, cfg.get("hashtags", []), cfg.get("platforms", {}), tags)
 
         repo_owner_repo = os.getenv("GITHUB_PAGES_REPO", "subv3rsiv3/website")  # e.g., "Subvertec/subvertec.github.io"
@@ -99,15 +104,41 @@ def main():
             date=now,  # keeps filename date and FM date in sync
         )
 
+        hero_rel = f"assets/images/{slug}-hero.webp"
+        hero_bytes = generate_hero_image(
+            title=title,
+            summary=article_pack.get("summary",""),
+            tags=article_pack.get("tags", []),
+            size=(1600, 900),  # 16:9
+            brand=cfg.get("brand_name", "Subvertec"),
+        )
+
+        # Commit the image
+        github_commit_file(
+            repo_owner_repo, repo_branch, repo_token, hero_rel, hero_bytes, f"Hero image: {title}"
+        )
+        fm_dict["header"] = {
+            "image": "/" + hero_rel,
+            "overlay_color": "#000",
+            "overlay_filter": 0.3,
+        }
+        
+        # Add image paths to front matter (helps themes & social)
+        fm_dict["image"] = "/" + hero_rel
+        fm_dict["og_image"] = "/" + hero_rel
+        fm_dict["twitter_image"] = "/" + hero_rel
+        fm_dict["layout"] = "single"
+        
         # Body (dedented so you don’t get weird leading spaces)
         body_md = render_template(
             cfg.get("post", {}).get("body_template", "jekyll_post.md.j2"),
             {
                 "title": title,
                 "summary": article_pack["summary"],
-                #"bullets": article_pack["bullets"],
+                "bullets": article_pack["bullets"],
                 "link": link,
                 "tags": article_pack.get("tags", []),
+                "image": "/" + hero_rel,
             },
         )
 
@@ -130,10 +161,10 @@ def main():
             print(post_to_buffer(os.getenv("BUFFER_ACCESS_TOKEN"), buf_profiles, fb_text, permalink))
 
 
-        print("\n--- Twitter Draft ---\n", out["twitter"])
-        print("\n--- Facebook Draft ---\n", out["facebook"])
-        print("\n--- Instagram Draft ---\n", out["instagram"])
-        print("\n--- TikTok Script ---\n", out["tiktok"])
+        # print("\n--- Twitter Draft ---\n", out["twitter"])
+        # print("\n--- Facebook Draft ---\n", out["facebook"])
+        # print("\n--- Instagram Draft ---\n", out["instagram"])
+        # print("\n--- TikTok Script ---\n", out["tiktok"])
         print("\n--- doc_text Draft ---\n", out["doc_text"])
 
         if use_buffer and not dry_run and buffer_client:

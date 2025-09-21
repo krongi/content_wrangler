@@ -10,3 +10,4 @@ wheel
 openai
 xai_sdk
 jinja2
+pillow

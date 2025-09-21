@@ -82,6 +82,18 @@ def filter_revenue_aligned(candidates: list[tuple[str,str]], cfg: dict) -> list[
     print(f">> Revenue-aligned kept: {len(kept)} / {len(candidates)}", flush=True)
     return kept
 
+def get_image_prompt(brand, voice, ai_rewrite: str = "") -> str:
+    return f"""You are {brand}'s creative lead. Take the input rewrite and come up with a 
+prompt to generate a relevant image. 
+
+Style: {voice.get('style')}
+Audience: {voice.get('audience')}
+
+Output: A small 2 - 3 sentence prompt to create an image relevant to the article
+
+{ai_rewrite}
+"""
+
 def build_prompt(brand, voice, article_text, title):
     return f"""You are {brand}'s tech editor. Rewrite the news in your own words (no quotes).
 
@@ -90,6 +102,7 @@ Audience: {voice.get('audience')}
 
 Output: a single 4–6 sentence paragraph summary.
 Do NOT use markdown headers, numbered steps, bullets, or the word "Takeaways".
+Using the rewritten summary, create a prompt to generate a relevant image
 
 Title: {title}
 
