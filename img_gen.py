@@ -3,8 +3,6 @@ import textwrap, math, os, dotenv, json, requests
 from llm import _strip_md_headings
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps
-from xai_sdk import Client
-from xai_sdk.chat import user, system
 
 dotenv.load_dotenv()
 
@@ -26,6 +24,9 @@ headers = {
 def llm_image(url: str = IMAGE_GENERATION_URL, api_key: str = API_KEY, model: str = "grok-2-image",   prompt: str = "") -> str:
     payload["prompt"] = prompt
     resp = requests.request("POST", url = url, headers = headers, json = payload)
+    resp_json = resp.json()
+    print(type(resp_json))
+    fetch_cover_grok(resp_json.get("data")[0].get("url"))
     return resp
 
 # Try a few common font paths; fall back to PIL default
@@ -78,6 +79,30 @@ def _draw_gradient(w, h, c1, c2):
 #             cur = [w]
 #     if cur: lines.append(" ".join(cur))
 #     return lines
+
+def _font(sz):
+    for p in _FONT_CANDIDATES:
+        try: return ImageFont.truetype(p, sz)
+        except: pass
+    return ImageFont.load_default()
+
+def cover_grok_watermark(img: Image.Image, text="Subvertec", frac=0.08) -> Image.Image:
+    """Draw a branded footer bar over the bottom area."""
+    w, h = img.size
+    bar_h = max(60, min(int(h * frac), 140))
+    y0 = h - bar_h
+    draw = ImageDraw.Draw(img)
+    draw.rectangle((0, y0, w, h), fill=(0, 0, 0))
+    font = _font(max(24, int(bar_h * 0.45)))
+    draw.text((18, y0 + (bar_h - font.size)//2), text, fill=(255, 255, 255), font=font)
+    return img
+
+def fetch_cover_grok(url: str, **kwargs) -> bytes:
+    r = requests.get(url, timeout=60); r.raise_for_status()
+    img = Image.open(BytesIO(r.content)).convert("RGB")
+    img = cover_grok_watermark(img, **kwargs)
+    buf = BytesIO(); img.save(buf, "WEBP", quality=92, method=6)
+    return buf.getvalue()
 
 def generate_hero_image(title: str, summary: str, tags=None, size=(1600, 900), brand="Subvertec") -> bytes:
     w, h = size
