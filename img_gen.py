@@ -1,6 +1,5 @@
 # imggen.py
-import textwrap, math, os, dotenv, json, requests
-from llm import _strip_md_headings
+import math, os, dotenv, requests
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps
 
@@ -25,9 +24,8 @@ def llm_image(url: str = IMAGE_GENERATION_URL, api_key: str = API_KEY, model: st
     payload["prompt"] = prompt
     resp = requests.request("POST", url = url, headers = headers, json = payload)
     resp_json = resp.json()
-    print(type(resp_json))
-    fetch_cover_grok(resp_json.get("data")[0].get("url"))
-    return resp
+    article_image = fetch_cover_grok(resp_json.get("data")[0].get("url"))
+    return article_image
 
 # Try a few common font paths; fall back to PIL default
 _FONT_CANDIDATES = [
@@ -65,20 +63,20 @@ def _draw_gradient(w, h, c1, c2):
         md.ellipse((w//2 - r, h//2 - r, w//2 + r, h//2 + r), outline=a, width=max(1, maxr // 200))
     return Image.composite(top, img, mask)
 
-# def _fit_text(draw, text, font, max_width, line_height_mult=1.0):
-#     # Wrap by width using trial lines
-#     words = text.split()
-#     lines, cur = [], []
-#     for w in words:
-#         test = " ".join(cur + [w])
-#         bbox = draw.textbbox((0,0), test, font=font)
-#         if bbox[2] <= max_width or not cur:
-#             cur.append(w)
-#         else:
-#             lines.append(" ".join(cur))
-#             cur = [w]
-#     if cur: lines.append(" ".join(cur))
-#     return lines
+def _fit_text(draw, text, font, max_width, line_height_mult=1.0):
+    # Wrap by width using trial lines
+    words = text.split()
+    lines, cur = [], []
+    for w in words:
+        test = " ".join(cur + [w])
+        bbox = draw.textbbox((0,0), test, font=font)
+        if bbox[2] <= max_width or not cur:
+            cur.append(w)
+        else:
+            lines.append(" ".join(cur))
+            cur = [w]
+    if cur: lines.append(" ".join(cur))
+    return lines
 
 def _font(sz):
     for p in _FONT_CANDIDATES:
@@ -97,42 +95,43 @@ def cover_grok_watermark(img: Image.Image, text="Subvertec", frac=0.08) -> Image
     draw.text((18, y0 + (bar_h - font.size)//2), text, fill=(255, 255, 255), font=font)
     return img
 
-def fetch_cover_grok(url: str, **kwargs) -> bytes:
+def fetch_cover_grok(url: str, **kwargs) -> Image:
     r = requests.get(url, timeout=60); r.raise_for_status()
     img = Image.open(BytesIO(r.content)).convert("RGB")
     img = cover_grok_watermark(img, **kwargs)
     buf = BytesIO(); img.save(buf, "WEBP", quality=92, method=6)
-    return buf.getvalue()
+    return img
 
-def generate_hero_image(title: str, summary: str, tags=None, size=(1600, 900), brand="Subvertec") -> bytes:
-    w, h = size
+def generate_hero_image(title: str, summary: str, img_Image: Image, tags=None, size=(1600, 900), brand="Subvertec") -> bytes:
+    w, h = img_Image.size
     bg1, bg2 = _palette_for_tags(tags)
-    img = _draw_gradient(w, h, bg1, bg2)
+    # img = _draw_gradient(w, h, bg1, bg2)
+    img = img_Image
     draw = ImageDraw.Draw(img)
 
     # Title sizing
-    # title_font_size = 72
-    # title_font = _load_font(title_font_size)
-    # # Shrink font until title fits in ~70% width and <= 4 lines
-    # for fs in range(72, 38, -2):
-    #     title_font = _load_font(fs)
-    #     lines = _fit_text(draw, title, title_font, int(w*0.70))
-    #     if len(lines) <= 4: break
+    title_font_size = 72
+    title_font = _load_font(title_font_size)
+    # Shrink font until title fits in ~70% width and <= 4 lines
+    for fs in range(72, 38, -2):
+        title_font = _load_font(fs)
+        lines = _fit_text(draw, title, title_font, int(w*0.70))
+        if len(lines) <= 4: break
 
     # Title block
-    # x = int(w*0.10)
-    # y = int(h*0.20)
-    # line_gap = int(title_font.size * 0.28)
-    # for i, line in enumerate(lines):
-    #     draw.text((x, y + i*(title_font.size + line_gap)), line, fill=(240, 240, 255), font=title_font)
+    x = int(w*0.10)
+    y = int(h*0.20)
+    line_gap = int(title_font.size * 0.28)
+    for i, line in enumerate(lines):
+        draw.text((x, y + i*(title_font.size + line_gap)), line, fill=(240, 240, 255), font=title_font)
 
     # Subtitle (shortened summary)
-    # sub = " ".join(summary.split()[:22])
-    # sub_font = _load_font(30)
-    # sub_lines = _fit_text(draw, sub, sub_font, int(w*0.70))
-    # y2 = y + len(lines)*(title_font.size + line_gap) + int(title_font.size*0.8)
-    # for i, line in enumerate(sub_lines[:3]):
-    #     draw.text((x, y2 + i*(sub_font.size + 6)), line, fill=(220, 220, 230), font=sub_font)
+    sub = " ".join(summary.split()[:22])
+    sub_font = _load_font(30)
+    sub_lines = _fit_text(draw, sub, sub_font, int(w*0.70))
+    y2 = y + len(lines)*(title_font.size + line_gap) + int(title_font.size*0.8)
+    for i, line in enumerate(sub_lines[:3]):
+        draw.text((x, y2 + i*(sub_font.size + 6)), line, fill=(220, 220, 230), font=sub_font)
 
     # Brand tag
     brand_font = _load_font(28)
@@ -144,7 +143,7 @@ def generate_hero_image(title: str, summary: str, tags=None, size=(1600, 900), b
     draw.rounded_rectangle((bx, by, bx+br_w+pad*2, by+br_h+pad*2), radius=18, fill=(0,0,0, 180))
     draw.text((bx+pad, by+pad), brand, fill=(230, 230, 240), font=brand_font)
 
-    mask = Image.new("L", (w, h), 0)
+    mask = Image.new("L", (img.width, img.height), 0)
     md = ImageDraw.Draw(mask)
     # bright center (we'll invert to get stronger edges)
     md.rectangle(

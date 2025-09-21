@@ -70,7 +70,7 @@ def main():
         gen_image_idea = get_image_prompt(cfg["brand_name"], cfg["voice"], rewritten)
         image_prompt = run_llm(gen_image_idea, cfg.get("llm", {"provider": "none"}))
         article_image = llm_image(url=IMAGE_GENERATION_URL, api_key=os.getenv("XAI_API_KEY"), model="grok-2-image", prompt=image_prompt)
-        
+
        # summary + bullets
         summary = " ".join([s.strip() for s in rewritten.split("\n")[0:6] if s.strip()])
 
@@ -111,6 +111,7 @@ def main():
             tags=article_pack.get("tags", []),
             size=(1600, 900),  # 16:9
             brand=cfg.get("brand_name", "Subvertec"),
+            img_Image=article_image
         )
 
         # Commit the image
