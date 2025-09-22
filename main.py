@@ -1,8 +1,8 @@
 
-import os, hashlib, textwrap, datetime, socket, yaml
+import os, hashlib,datetime, socket, yaml
 from pathlib import Path
 from dotenv import load_dotenv
-from img_gen import generate_hero_image, llm_image, payload, headers, IMAGE_GENERATION_URL
+from img_gen import generate_hero_image, llm_image, IMAGE_GENERATION_URL
 from db import init_db, mark_processed, potential_articles
 from llm import filter_revenue_aligned, build_prompt, run_llm, get_image_prompt
 from post import post_to_buffer
@@ -161,11 +161,11 @@ def main():
             print(">> Posting to Buffer…")
             print(post_to_buffer(os.getenv("BUFFER_ACCESS_TOKEN"), buf_profiles, fb_text, permalink))
 
-
         # print("\n--- Twitter Draft ---\n", out["twitter"])
         # print("\n--- Facebook Draft ---\n", out["facebook"])
         # print("\n--- Instagram Draft ---\n", out["instagram"])
         # print("\n--- TikTok Script ---\n", out["tiktok"])
+
         print("\n--- doc_text Draft ---\n", out["doc_text"])
 
         if use_buffer and not dry_run and buffer_client:

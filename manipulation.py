@@ -1,4 +1,4 @@
-import requests, re, os, dotenv, feedparser, hashlib
+import requests, re, dotenv, feedparser, hashlib
 from pathlib import Path
 from db import was_processed
 from readability import Document
@@ -9,6 +9,7 @@ dotenv.load_dotenv()
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 print(str(TEMPLATES))
+
 def clean_text(txt: str) -> str:
     return re.sub(r"\s+", " ", txt).strip()
 

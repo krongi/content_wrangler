@@ -16,31 +16,31 @@ def score_text(text: str, inc: list[str], exc: list[str]) -> int:
             score -= 2
     return score
 
-def llm_is_revenue_aligned(title: str, snippet: str, cfg: dict) -> bool:
-    """Optional: second-pass gate using your LLM (very cheap prompt)."""
-    try:
-        if cfg.get("llm", {}).get("provider") != "openai":
-            return True  # if no LLM, accept keyword result
-        import openai
-        client = openai.OpenAI()
-        prompt = (
-            "You are a marketing filter for an MSP/AI consulting firm. "
-            "Answer strictly 'yes' or 'no'. Keep 'yes' only if this article could lead to paid services "
-            "(Microsoft 365/Azure, security/ransomware/CVE/MFA, DNS/network/UniFi, automation/AI/chatbots, "
-            "cloud/Proxmox/Docker/K8s, backup/DR, SMB compliance).\n\n"
-            f"Title: {title}\nSnippet: {snippet}\n"
-        )
-        resp = client.chat.completions.create(
-            model=cfg["llm"].get("openai", {}).get("model", "gpt-4o-mini"),
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.0,
-            max_tokens=2,
-        )
-        ans = (resp.choices[0].message.content or "").strip().lower()
-        return ans.startswith("y")
-    except Exception:
-        # fail open to avoid blocking the pipeline on LLM hiccups
-        return True
+# def llm_is_revenue_aligned(title: str, snippet: str, cfg: dict) -> bool:
+#     """Optional: second-pass gate using your LLM (very cheap prompt)."""
+#     try:
+#         if cfg.get("llm", {}).get("provider") != "openai":
+#             return True  # if no LLM, accept keyword result
+#         import openai
+#         client = openai.OpenAI()
+#         prompt = (
+#             "You are a marketing filter for an MSP/AI consulting firm. "
+#             "Answer strictly 'yes' or 'no'. Keep 'yes' only if this article could lead to paid services "
+#             "(Microsoft 365/Azure, security/ransomware/CVE/MFA, DNS/network/UniFi, automation/AI/chatbots, "
+#             "cloud/Proxmox/Docker/K8s, backup/DR, SMB compliance).\n\n"
+#             f"Title: {title}\nSnippet: {snippet}\n"
+#         )
+#         resp = client.chat.completions.create(
+#             model=cfg["llm"].get("openai", {}).get("model", "gpt-4o-mini"),
+#             messages=[{"role": "user", "content": prompt}],
+#             temperature=0.0,
+#             max_tokens=2,
+#         )
+#         ans = (resp.choices[0].message.content or "").strip().lower()
+#         return ans.startswith("y")
+#     except Exception:
+#         # fail open to avoid blocking the pipeline on LLM hiccups
+#         return True
 
 def filter_revenue_aligned(candidates: list[tuple[str,str]], cfg: dict) -> list[tuple[str,str]]:
     """
@@ -71,11 +71,11 @@ def filter_revenue_aligned(candidates: list[tuple[str,str]], cfg: dict) -> list[
         if score < min_score:
             continue
 
-        if use_llm:
-            if not llm_is_revenue_aligned(title, snippet, cfg):
-                print(f"      LLM gate: NO", flush=True)
-                continue
-            print(f"      LLM gate: YES", flush=True)
+        # if use_llm:
+        #     if not llm_is_revenue_aligned(title, snippet, cfg):
+        #         print(f"      LLM gate: NO", flush=True)
+        #         continue
+        #     print(f"      LLM gate: YES", flush=True)
 
         kept.append((title, link, score))
 

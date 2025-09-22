@@ -1,10 +1,7 @@
-# publisher/jekyll_publisher.py
 from __future__ import annotations
 import base64, json, re, datetime
 from pathlib import Path
 import requests, base64, requests
-
-# If you moved FM to publisher/front_matter.py, we can bridge to it here
 from publisher.front_matter import build_front_matter_dict, front_matter_text
 
 def slugify(title: str) -> str:
@@ -13,18 +10,9 @@ def slugify(title: str) -> str:
     s = re.sub(r"\s+", "-", s).strip("-")
     return s[:80]
 
-# publisher/github_files.py
-
 def jekyll_permalink(base_url: str, date: datetime.datetime, slug: str,
                      pattern: str = "/blog/:title/") -> str:
-    """Build a permalink that matches your Jekyll pattern."""
-    return (
-        base_url.rstrip("/")
-        # + pattern.replace(":year", date.strftime("%Y"))
-        #          .replace(":month", date.strftime("%m"))
-        #          .replace(":day", date.strftime("%d"))
-                 .replace(":title", slug)
-    )
+    return base_url.rstrip("/").replace(":title", slug)
 
 def github_commit_markdown(
     owner_repo: str,
@@ -34,10 +22,6 @@ def github_commit_markdown(
     content: str,
     commit_msg: str,
 ):
-    """
-    Create or update a file in the repo using the GitHub Contents API.
-    path_in_repo: e.g. '_posts/2025-09-18-my-post.md'
-    """
     if not repo_token:
         raise ValueError("GITHUB_TOKEN is missing or empty.")
 
@@ -66,13 +50,8 @@ def github_commit_markdown(
         )
     return resp.json()
 
-# ---- Optional helpers so existing imports don’t explode ----
-
 def build_front_matter(meta: dict) -> str:
-    """
-    Back-compat wrapper so code calling build_front_matter(meta) still works.
-    Expects meta dict with at least title, date (datetime), summary, tags.
-    """
+    
     fm_dict, _slug = build_front_matter_dict(
         title=meta.get("title", ""),
         summary=meta.get("summary", ""),
@@ -83,10 +62,7 @@ def build_front_matter(meta: dict) -> str:
     return front_matter_text(fm_dict)
 
 def write_jekyll_post(repo_dir: str, meta: dict, body_md: str) -> Path:
-    """
-    Minimal local writer; not used by the Contents API path but kept for imports.
-    Writes into <repo_dir>/_posts/YYYY-MM-DD-slug.md
-    """
+
     date = meta.get("date") or datetime.datetime.now()
     slug = meta.get("slug") or slugify(meta.get("title", "post"))
     fname = f"{date.strftime('%Y-%m-%d')}-{slug}.md"

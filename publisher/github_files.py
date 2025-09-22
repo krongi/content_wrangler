@@ -1,4 +1,3 @@
-# publisher/github_files.py
 import base64, requests
 
 def github_commit_file(owner_repo: str, branch: str, token: str,

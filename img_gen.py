@@ -1,11 +1,10 @@
-# imggen.py
 import math, os, dotenv, requests
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps
 
 dotenv.load_dotenv()
 
-IMAGE_GENERATION_URL = "https://api.x.ai/v1/images/generations"
+IMAGE_GENERATION_URL = os.getenv("IMAGE_GENERATION_URL")
 API_KEY = os.getenv("XAI_API_KEY")
 
 payload = {
