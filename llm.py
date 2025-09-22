@@ -77,9 +77,10 @@ def filter_revenue_aligned(candidates: list[tuple[str,str]], cfg: dict) -> list[
                 continue
             print(f"      LLM gate: YES", flush=True)
 
-        kept.append((title, link))
+        kept.append((title, link, score))
 
-    print(f">> Revenue-aligned kept: {len(kept)} / {len(candidates)}", flush=True)
+    kept.sort()
+    print(f">> Revenue-aligned kept: {len(kept)} / {len(candidates)}", flush=True)    
     return kept
 
 def get_image_prompt(brand, voice, ai_rewrite: str = "") -> str:
@@ -102,7 +103,6 @@ Audience: {voice.get('audience')}
 
 Output: a single 4–6 sentence paragraph summary.
 Do NOT use markdown headers, numbered steps, bullets, or the word "Takeaways".
-Using the rewritten summary, create a prompt to generate a relevant image
 
 Title: {title}
 

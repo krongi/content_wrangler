@@ -3,7 +3,7 @@ import os, hashlib, textwrap, datetime, socket, yaml
 from pathlib import Path
 from dotenv import load_dotenv
 from img_gen import generate_hero_image, llm_image, payload, headers, IMAGE_GENERATION_URL
-from db import init_db, mark_processed
+from db import init_db, mark_processed, potential_articles
 from llm import filter_revenue_aligned, build_prompt, run_llm, get_image_prompt
 from post import post_to_buffer
 from manipulation import extract_article, format_outputs, pick_fresh_entries, auto_tags, render_template
@@ -57,7 +57,7 @@ def main():
         buffer_cfg = cfg["post"]["buffer"]
         buffer_client = BufferClient(buffer_cfg["access_token"], buffer_cfg.get("profile_ids", []))
 
-    for title, link in to_process:
+    for title, link, score in to_process:
         print(f"\n=== {title} ===\n{link}")
         try:
             art_text = extract_article(link)
@@ -174,7 +174,10 @@ def main():
         
         with open(f"{ARTICLE_DOCS}/{title}.doc_text", "w") as doc_text:
             doc_text.write(out["doc_text"])
-
+        
+        for entry in candidates:
+            potential_articles(con, hashlib.sha1(entry[1].encode("utf-8")).hexdigest(), entry[1], entry[0], entry[2])            
+            
         mark_processed(con, hashlib.sha1(link.encode("utf-8")).hexdigest(), link, title)
 
 if __name__ == "__main__":
