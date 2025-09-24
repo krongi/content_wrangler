@@ -1,6 +1,20 @@
 import os, re
 from manipulation import extract_article, clean_text, token_trim
 
+def _create_snippet(article: str, char_count: int = 320) -> str:
+    total_len = 0
+    final_string = ""
+    split_art = article.split(". ")
+    for sentence in split_art:
+        check = len(sentence)
+        if check + total_len <= char_count and check + total_len <= 160:
+            total_len += check
+            final_string += sentence + "."
+        else:
+            break
+    return final_string
+
+
 def _strip_md_headings(s: str) -> str:
     return re.sub(r'(?m)^\s*#{1,6}\s+', '', s).strip()
 
@@ -59,7 +73,10 @@ def filter_revenue_aligned(candidates: list[tuple[str,str]], cfg: dict) -> list[
         try:
             # quick content fetch for better signal (shorten to avoid long prompts)
             art = extract_article(link)
-            snippet = art[:1200]
+            snippet = _create_snippet(art)
+            # split_snip = snippet.split(".")
+            # snippet = split_snip[:-2]
+            
         except Exception as e:
             print(f"   [{i}] fetch fail -> {e} (scoring title only)", flush=True)
             snippet = ""
@@ -109,6 +126,22 @@ Title: {title}
 ARTICLE:
 {article_text}
 """
+
+# def build_slug(brand, voice, rewritten, title):
+#     return f"""You are {brand}'s social media strategist. You create relevant slugs from rewritten articles.
+
+# Style: {voice.get('style')}
+# Audience: {voice.get('audience')}
+
+# Output: a short synopsis of {rewritten} with no more than 1200 characters.
+# Do NOT use markdown headers, numbered steps, bullets, or the word "Takeaways".
+# This is for the portion right under the title
+
+# Title: {title}
+
+# Article:
+# {rewritten}
+# """
 
 def run_llm(prompt: str, cfg: dict) -> str:
     provider = cfg.get("provider","none")

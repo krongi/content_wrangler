@@ -101,6 +101,17 @@ def fetch_cover_grok(url: str, **kwargs) -> Image:
     buf = BytesIO(); img.save(buf, "WEBP", quality=92, method=6)
     return img
 
+def brand_tag(draw, brand, w, h):
+    brand_font = _load_font(28)
+    br_w, br_h = draw.textbbox((0,0), brand, font=brand_font)[2:]
+    pad = 20
+    bx = w - br_w - pad*2 - 24
+    by = h - br_h - pad*2 - 24
+    # pill
+    draw.rounded_rectangle((bx, by, bx+br_w+pad*2, by+br_h+pad*2), radius=18, fill=(0,0,0, 180))
+    draw.text((bx+pad, by+pad), brand, fill=(230, 230, 240), font=brand_font)
+    return draw
+
 def generate_hero_image(title: str, summary: str, img_Image: Image, tags=None, size=(1600, 900), brand="Subvertec") -> bytes:
     w, h = img_Image.size
     bg1, bg2 = _palette_for_tags(tags)
@@ -108,7 +119,7 @@ def generate_hero_image(title: str, summary: str, img_Image: Image, tags=None, s
     img = img_Image
     draw = ImageDraw.Draw(img)
 
-    # Title sizing
+    #Title sizing
     title_font_size = 72
     title_font = _load_font(title_font_size)
     # Shrink font until title fits in ~70% width and <= 4 lines
@@ -132,41 +143,43 @@ def generate_hero_image(title: str, summary: str, img_Image: Image, tags=None, s
     for i, line in enumerate(sub_lines[:3]):
         draw.text((x, y2 + i*(sub_font.size + 6)), line, fill=(220, 220, 230), font=sub_font)
 
-    # Brand tag
-    brand_font = _load_font(28)
-    br_w, br_h = draw.textbbox((0,0), brand, font=brand_font)[2:]
-    pad = 20
-    bx = w - br_w - pad*2 - 24
-    by = h - br_h - pad*2 - 24
-    # pill
-    draw.rounded_rectangle((bx, by, bx+br_w+pad*2, by+br_h+pad*2), radius=18, fill=(0,0,0, 180))
-    draw.text((bx+pad, by+pad), brand, fill=(230, 230, 240), font=brand_font)
+    # # # Brand tag
+    # # brand_font = _load_font(28)
+    # # br_w, br_h = draw.textbbox((0,0), brand, font=brand_font)[2:]
+    # # pad = 20
+    # # bx = w - br_w - pad*2 - 24
+    # # by = h - br_h - pad*2 - 24
+    # # # pill
+    # # draw.rounded_rectangle((bx, by, bx+br_w+pad*2, by+br_h+pad*2), radius=18, fill=(0,0,0, 180))
+    # # draw.text((bx+pad, by+pad), brand, fill=(230, 230, 240), font=brand_font)
+    # brand_tag(draw, brand, w, h)
 
-    mask = Image.new("L", (img.width, img.height), 0)
-    md = ImageDraw.Draw(mask)
-    # bright center (we'll invert to get stronger edges)
-    md.rectangle(
-        (int(w * 0.06), int(h * 0.06), int(w * 0.94), int(h * 0.94)),
-        fill=255
-    )
-    # soften the mask so darkening is gradual
-    mask = mask.filter(ImageFilter.GaussianBlur(radius=max(w, h) // 12))
 
-    # invert -> edges ≈ 255 (strong), center ≈ 0 (none)
-    edge_mask = ImageOps.invert(mask)
+    # mask = Image.new("L", (img.width, img.height), 0)
+    # md = ImageDraw.Draw(mask)
+    # # bright center (we'll invert to get stronger edges)
+    # md.rectangle(
+    #     (int(w * 0.06), int(h * 0.06), int(w * 0.94), int(h * 0.94)),
+    #     fill=255
+    # )
+    # # soften the mask so darkening is gradual
+    # mask = mask.filter(ImageFilter.GaussianBlur(radius=max(w, h) // 12))
 
-    # build a black overlay with per-pixel alpha = edge strength
-    base_rgba = img.convert("RGBA")
-    overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    overlay.putalpha(edge_mask)
+    # # invert -> edges ≈ 255 (strong), center ≈ 0 (none)
+    # edge_mask = ImageOps.invert(mask)
 
-    # composite: this darkens edges but keeps the base fully opaque
-    comp = Image.alpha_composite(base_rgba, overlay)
+    # # build a black overlay with per-pixel alpha = edge strength
+    # base_rgba = img.convert("RGBA")
+    # overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    # overlay.putalpha(edge_mask)
 
-    # export as opaque RGB
-    rgb = comp.convert("RGB")
+    # # composite: this darkens edges but keeps the base fully opaque
+    # comp = Image.alpha_composite(base_rgba, overlay)
+
+    # # export as opaque RGB
+    # rgb = comp.convert("RGB")
 
     # Export to WebP bytes
     buf = BytesIO()
-    rgb.save(buf, format="WEBP", quality=92, method=6)
+    img.save(buf, format="WEBP", quality=92, method=6)
     return buf.getvalue()

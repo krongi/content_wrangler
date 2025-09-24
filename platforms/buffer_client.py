@@ -30,3 +30,13 @@ class BufferClient:
             except Exception:
                 results.append({"status_code": r.status_code, "text": r.text})
         return results
+
+def use_buffer(cfg):
+    use_buffer = cfg["post"].get("use_buffer", False)
+    dry_run = cfg["post"].get("dry_run", True)
+    buffer_client = None
+    if use_buffer:
+        from platforms.buffer_client import BufferClient
+        buffer_cfg = cfg["post"]["buffer"]
+        buffer_client = BufferClient(buffer_cfg["access_token"], buffer_cfg.get("profile_ids", []))
+    return buffer_client

@@ -1,4 +1,4 @@
-import requests, re, dotenv, feedparser, hashlib
+import requests, re, dotenv, feedparser, hashlib, httpx, time, random
 from pathlib import Path
 from db import was_processed
 from readability import Document
@@ -6,6 +6,32 @@ from bs4 import BeautifulSoup
 from jinja2 import Environment, FileSystemLoader
 
 dotenv.load_dotenv()
+
+DEFAULT_HEADERS = {
+    # Modern desktop Chrome UA (update occasionally)
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/130.0.0.0 Safari/537.36"),
+
+    # What a normal browser asks for on HTML navigations
+    "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,"
+               "image/avif,image/webp,*/*;q=0.8"),
+    "Accept-Language": "en-US,en;q=0.9",
+
+    # Helps a lot with CF/WAF checks
+    "Referer": "https://www.google.com/",
+    "Upgrade-Insecure-Requests": "1",
+
+    # Client hints + fetch metadata seen on real navigations
+    "sec-ch-ua": '"Chromium";v="130", "Google Chrome";v="130", "Not=A?Brand";v="24"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+}
+
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 print(str(TEMPLATES))
@@ -158,20 +184,30 @@ def format_outputs(article, url, hashtags, platforms, tags):
 def load_template(name: str) -> str:
     return (TEMPLATES / name).read_text(encoding="utf-8")
 
+def _get_url_base(url_string: str) -> str:
+    base_url = "https://" + url_string.split("/")[2]
+    return base_url
+
 def pick_fresh_entries(cfg, con):
     """Return a list of (title, link) for fresh items not yet processed."""
     items = []
     feeds = cfg.get("feeds", [])
-    ua = {"User-Agent": "SubvertecTechEngine/1.0 (+https://subvertec.com)"}
-
+    # ua = {"User-Agent": "SubvertecTechEngine/1.0 (+https://subvertec.com)"}
+    ua = DEFAULT_HEADERS
     print(f">> Fetching {len(feeds)} feeds with 10s timeout…", flush=True)
     for i, feed_url in enumerate(feeds, 1):
         try:
             print(f"   [{i}/{len(feeds)}] GET {feed_url}", flush=True)
-            r = requests.get(feed_url, headers=ua, timeout=10)
-            r.raise_for_status()
-            parsed = feedparser.parse(r.text)
-
+            # r = requests.get(feed_url, headers=ua, timeout=10)
+            # r.raise_for_status()
+            # parsed = feedparser.parse(r.text)
+            with httpx.Client(http2=True, headers=DEFAULT_HEADERS, follow_redirects=True, timeout=20) as c:
+                base_url = _get_url_base(feed_url)
+                c.get(base_url)
+                time.sleep(random.randint(2, 5))
+                r = c.get(feed_url)
+                r.raise_for_status()
+                parsed = feedparser.parse(r.text)
             count = 0
             for e in parsed.entries[:10]:
                 title = (e.get("title") or "").strip()

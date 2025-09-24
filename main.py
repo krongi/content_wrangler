@@ -4,13 +4,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from img_gen import generate_hero_image, llm_image, IMAGE_GENERATION_URL
 from db import init_db, mark_processed, potential_articles
-from llm import filter_revenue_aligned, build_prompt, run_llm, get_image_prompt
+from llm import filter_revenue_aligned, build_prompt, run_llm, get_image_prompt#, build_slug
 from post import post_to_buffer
 from manipulation import extract_article, format_outputs, pick_fresh_entries, auto_tags, render_template
 from bullets import extract_bullets, dedupe_bullets, fallback_bullets_from_summary
 from publisher.jekyll_publisher import github_commit_markdown, jekyll_permalink
 from publisher.front_matter import build_front_matter_dict, front_matter_text
 from publisher.github_files import github_commit_file
+from platforms.buffer_client import use_buffer
 
 socket.setdefaulttimeout(10)
 
@@ -49,14 +50,6 @@ def main():
     to_process = candidates[: cfg.get("articles_per_run", 1)]
     print(f"Processing {len(to_process)} article(s).")
 
-    use_buffer = cfg["post"].get("use_buffer", False)
-    dry_run = cfg["post"].get("dry_run", True)
-    buffer_client = None
-    if use_buffer:
-        from platforms.buffer_client import BufferClient
-        buffer_cfg = cfg["post"]["buffer"]
-        buffer_client = BufferClient(buffer_cfg["access_token"], buffer_cfg.get("profile_ids", []))
-
     for title, link, score in to_process:
         print(f"\n=== {title} ===\n{link}")
         try:
@@ -65,8 +58,9 @@ def main():
             print(f"Failed to fetch article: {e}")
             continue
 
-        prompt = build_prompt(cfg["brand_name"], cfg["voice"], art_text, title)
-        rewritten = run_llm(prompt, cfg.get("llm", {"provider":"none"}))
+        main_prompt = build_prompt(cfg["brand_name"], cfg["voice"], art_text, title)
+        rewritten = run_llm(main_prompt, cfg.get("llm", {"provider":"none"}))
+        # slug = build_slug(cfg["brand_name"], cfg["voice"], rewritten, title)
         gen_image_idea = get_image_prompt(cfg["brand_name"], cfg["voice"], rewritten)
         image_prompt = run_llm(gen_image_idea, cfg.get("llm", {"provider": "none"}))
         article_image = llm_image(url=IMAGE_GENERATION_URL, api_key=os.getenv("XAI_API_KEY"), model="grok-2-image", prompt=image_prompt)
@@ -89,10 +83,10 @@ def main():
         article_pack = {"title": title, "summary": summary, "bullets": bullets, "tags": tags}
         out = format_outputs(article_pack, link, cfg.get("hashtags", []), cfg.get("platforms", {}), tags)
 
-        repo_owner_repo = os.getenv("GITHUB_PAGES_REPO", "subv3rsiv3/website")  # e.g., "Subvertec/subvertec.github.io"
+        repo_owner_repo = os.getenv("GITHUB_PAGES_REPO", "user/repo")  # e.g., "Subvertec/subvertec.github.io"
         repo_branch     = os.getenv("GITHUB_PAGES_BRANCH", "main")          # or "main"
         repo_token      = os.getenv("GITHUB_TOKEN")                           # classic token with repo scope or a fine-grained token
-        site_base_url   = os.getenv("SITE_BASE_URL", "https://subvertec.com") # your domain
+        site_base_url   = os.getenv("SITE_BASE_URL", "https://example.com") # your domain
 
         now  = datetime.datetime.now()
         # Build safe, Jekyll-friendly front matter
@@ -165,12 +159,11 @@ def main():
         # print("\n--- Facebook Draft ---\n", out["facebook"])
         # print("\n--- Instagram Draft ---\n", out["instagram"])
         # print("\n--- TikTok Script ---\n", out["tiktok"])
-
         print("\n--- doc_text Draft ---\n", out["doc_text"])
 
-        if use_buffer and not dry_run and buffer_client:
-            result = buffer_client.post(text=out["facebook"] or out["twitter"], link=link)
-            print("Buffer result:", result)
+        # if use_buffer and not dry_run and buffer_client:
+        #     result = buffer_client.post(text=out["facebook"] or out["twitter"], link=link)
+        #     print("Buffer result:", result)
         
         with open(f"{ARTICLE_DOCS}/{title}.doc_text", "w") as doc_text:
             doc_text.write(out["doc_text"])

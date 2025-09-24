@@ -8,6 +8,8 @@ articles_per_run: 1
 
 feeds:
   - "https://feeds.arstechnica.com/arstechnica/index"
+  # - "https://www.bleepingcomputer.com/feed/"
+  # - "https://www.bleepingcomputer.com/virus-removal/feed/"
   # - "https://slickdeals.net/newsearch.php?mode=frontpage&searcharea=deals&searchin=first&rss=1"
   # - "https://slickdeals.net/newsearch.php?mode=popdeals&searcharea=deals&searchin=first&rss=1"
   # - "http://feeds.feedburner.com/SlickdealsnetUP"

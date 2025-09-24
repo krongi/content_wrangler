@@ -11,3 +11,5 @@ openai
 xai_sdk
 jinja2
 pillow
+httpx
+h2
