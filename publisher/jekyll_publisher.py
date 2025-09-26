@@ -1,8 +1,6 @@
 from __future__ import annotations
-import base64, json, re, datetime
-from pathlib import Path
-import requests, base64, requests
-from publisher.front_matter import build_front_matter_dict, front_matter_text
+from io import BytesIO
+import base64, json, re, datetime, yaml, requests
 
 def slugify(title: str) -> str:
     s = title.lower()
@@ -61,13 +59,47 @@ def build_front_matter(meta: dict) -> str:
     )
     return front_matter_text(fm_dict)
 
-def write_jekyll_post(repo_dir: str, meta: dict, body_md: str) -> Path:
+def _jekyll_dt(dt: datetime.datetime | None = None) -> str:
+    dt = (dt or datetime.now().astimezone())
+    return dt.strftime("%Y-%m-%d %H:%M:%S %z")  # Jekyll-friendly
 
-    date = meta.get("date") or datetime.datetime.now()
-    slug = meta.get("slug") or slugify(meta.get("title", "post"))
-    fname = f"{date.strftime('%Y-%m-%d')}-{slug}.md"
-    path = Path(repo_dir) / "_posts" / fname
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fm = build_front_matter(meta)
-    path.write_text(fm + (body_md or ""), encoding="utf-8")
-    return path
+def build_front_matter_dict(
+    *,
+    title: str,
+    summary: str = "",
+    tags: list[str] | None = None,
+    categories: list[str] | None = None,
+    date: datetime.datetime | None = None,
+    permalink: str | None = None,
+    layout: str = "posts",
+    header_image: str | None = None,
+    seo_title: str | None = None,
+    seo_description: str | None = None,
+    excerpt: str | None = None,
+):
+    tags = [str(t) for t in (tags or [])]
+    categories = [str(c) for c in (categories or [])]
+    dt = date or datetime.now().astimezone()
+    slug = slugify(title)
+
+    fm = {
+        "layout": layout,
+        "title": str(title),
+        "date": _jekyll_dt(dt),
+        # "excerpt": (excerpt if excerpt is not None else summary)[:240],
+        "excerpt": (excerpt if excerpt is not None else summary).split(".")[0],
+        "seo_title": (seo_title or title),
+        "seo_description": (seo_description or summary)[:155],
+        "categories": categories,
+        "tags": tags,
+        "permalink": permalink or f"/blog/{slug}/",
+    }
+    if header_image:
+        fm["header_image"] = header_image
+    return fm, slug  # <-- exactly two return values
+
+def front_matter_text(fm_dict: dict) -> str:
+    yaml_txt = yaml.safe_dump(
+        fm_dict, allow_unicode=True, sort_keys=False, default_flow_style=False, width=1000
+    )
+    return b"---\n" + yaml_txt.encode('utf-8') + b"---\n\n"
