@@ -4,14 +4,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 from img_gen import generate_hero_image, llm_image, IMAGE_GENERATION_URL
 from db import init_db, mark_processed, potential_articles
-from llm import filter_revenue_aligned, build_prompt, run_llm, get_image_prompt#, build_slug
+from llm import filter_revenue_aligned, build_prompt, run_llm, get_image_prompt
 from post import post_to_buffer
 from manipulation import extract_article, format_outputs, pick_fresh_entries, auto_tags, render_template
 from bullets import extract_bullets, dedupe_bullets, fallback_bullets_from_summary
-from publisher.jekyll_publisher import github_commit_markdown, jekyll_permalink
-from publisher.front_matter import build_front_matter_dict, front_matter_text
-from publisher.github_files import github_commit_file
-from platforms.buffer_client import use_buffer
+from publisher.jekyll_publisher import github_commit_markdown, jekyll_permalink, build_front_matter_dict, front_matter_text
+from publisher.github_files import github_commit_files
+
 
 socket.setdefaulttimeout(10)
 
@@ -21,10 +20,9 @@ BASE = Path(__file__).resolve().parent
 DATA_FOLDER = BASE / "data"
 TEMPLATES = BASE / "templates"
 ARTICLE_DOCS = BASE / "article_docs"
-PUBLISHER = BASE / "publisher"
 for p in (DATA_FOLDER, TEMPLATES, ARTICLE_DOCS):
     Path(p).mkdir(parents=True, exist_ok=True)
-(DB_PATH := DATA_FOLDER / "content.db")
+DB_PATH = DATA_FOLDER / "content.db"
 
 print(">> Tech Content Engine starting…", flush=True)
 print(">> CWD:", os.getcwd(), flush=True)
@@ -35,7 +33,7 @@ def main():
     cfg = yaml.safe_load((BASE / "config.yaml").read_text(encoding="utf-8"))
     print(f">> Feeds: {len(cfg.get('feeds', []))}, provider: {cfg.get('llm',{}).get('provider')}", flush=True)
 
-    con = init_db()
+    con = init_db(DB_PATH)
     print(">> DB initialized", flush=True)
 
     candidates = pick_fresh_entries(cfg, con)
@@ -60,7 +58,6 @@ def main():
 
         main_prompt = build_prompt(cfg["brand_name"], cfg["voice"], art_text, title)
         rewritten = run_llm(main_prompt, cfg.get("llm", {"provider":"none"}))
-        # slug = build_slug(cfg["brand_name"], cfg["voice"], rewritten, title)
         gen_image_idea = get_image_prompt(cfg["brand_name"], cfg["voice"], rewritten)
         image_prompt = run_llm(gen_image_idea, cfg.get("llm", {"provider": "none"}))
         article_image = llm_image(url=IMAGE_GENERATION_URL, api_key=os.getenv("XAI_API_KEY"), model="grok-2-image", prompt=image_prompt)
@@ -107,11 +104,8 @@ def main():
             brand=cfg.get("brand_name", "Subvertec"),
             img_Image=article_image
         )
-
-        # Commit the image
-        github_commit_file(
-            repo_owner_repo, repo_branch, repo_token, hero_rel, hero_bytes, f"Hero image: {title}"
-        )
+        git_dict = {hero_rel: hero_bytes}
+        
         fm_dict["header"] = {
             "image": "/" + hero_rel,
             "overlay_color": "#000",
@@ -137,12 +131,20 @@ def main():
             },
         )
 
-        content = front_matter_text(fm_dict) + body_md
+        content = front_matter_text(fm_dict) + body_md.encode('utf-8')
+        
 
         fname = f"_posts/{now.strftime('%Y-%m-%d')}-{slug}.md"
-        github_commit_markdown(
-            repo_owner_repo, repo_branch, repo_token, fname, content, f"Publish: {title}"
+        git_dict.update({fname: content})
+
+        # Commit the image
+        github_commit_files(
+            repo_owner_repo, repo_branch, repo_token, git_dict, f"Article: {title} and hero image for article"
         )
+        
+        # github_commit_markdown(
+        #     repo_owner_repo, repo_branch, repo_token, fname, content, f"Publish: {title}"
+        # )
 
         permalink = jekyll_permalink(
             site_base_url, now, slug, os.getenv("JEKYLL_PERMALINK", "/:year/:month/:day/:title/")

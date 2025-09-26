@@ -1,6 +1,5 @@
 import requests
 def post_to_buffer(access_token: str, profile_ids: list[str], text: str, link: str):
-    import requests, json
     url = "https://api.bufferapp.com/1/updates/create.json"
     payload = {
         "text": text,

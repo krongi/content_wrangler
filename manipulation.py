@@ -34,7 +34,6 @@ DEFAULT_HEADERS = {
 
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
-print(str(TEMPLATES))
 
 def clean_text(txt: str) -> str:
     return re.sub(r"\s+", " ", txt).strip()
@@ -43,7 +42,7 @@ def sha1(s: str) -> str:
     return hashlib.sha1(s.encode("utf-8")).hexdigest()
 
 def extract_article(url: str, timeout=20) -> str:
-    r = requests.get(url, timeout=timeout, headers={"User-Agent":"Mozilla/5.0"})
+    r = requests.get(url, timeout=timeout, headers=DEFAULT_HEADERS)
     r.raise_for_status()
     doc = Document(r.text)
     html = doc.summary(html_partial=True)
